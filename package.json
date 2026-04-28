@@ -1,0 +1,35 @@
+{
+  "name": "dumpvault",
+  "version": "0.1.0-pre",
+  "description": "Cross-engine database backup tool. One binary, one config, many databases.",
+  "type": "module",
+  "module": "src/cli.ts",
+  "bin": {
+    "dumpvault": "./src/cli.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/cli.ts --compile --outfile=dist/dumpvault",
+    "lint": "biome check src",
+    "format": "biome format --write src",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit"
+  },
+  "license": "MIT",
+  "author": "Saad Baig",
+  "engines": {
+    "bun": ">=1.0.0"
+  },
+  "dependencies": {
+    "commander": "^12.1.0",
+    "croner": "^8.1.0",
+    "pino": "^9.5.0",
+    "yaml": "^2.6.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.4",
+    "@types/bun": "latest",
+    "typescript": "^5.6.0"
+  }
+}
