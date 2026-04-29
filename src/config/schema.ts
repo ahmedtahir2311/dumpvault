@@ -16,7 +16,10 @@ const StorageSchema = z
 const NotificationsSchema = z
   .object({
     webhook: z.string().url(),
-    on: z.array(z.enum(['failure', 'success'])).min(1).default(['failure']),
+    on: z
+      .array(z.enum(['failure', 'success']))
+      .min(1)
+      .default(['failure']),
   })
   .strict();
 

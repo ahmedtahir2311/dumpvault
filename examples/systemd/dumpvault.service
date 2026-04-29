@@ -1,0 +1,49 @@
+# Systemd unit for DumpVault.
+#
+# Install:
+#   sudo useradd -r -s /usr/sbin/nologin -d /var/lib/dumpvault dumpvault
+#   sudo mkdir -p /var/lib/dumpvault /etc/dumpvault
+#   sudo chown dumpvault:dumpvault /var/lib/dumpvault
+#   sudo cp dumpvault.service /etc/systemd/system/
+#   sudo cp dumpvault.yaml    /etc/dumpvault/
+#   sudo chmod 600            /etc/dumpvault/dumpvault.yaml
+#   # Put your DB passwords in /etc/dumpvault/env  (KEY=value lines, chmod 600)
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now dumpvault.service
+#
+# Logs:    journalctl -u dumpvault -f
+# Status:  systemctl status dumpvault
+
+[Unit]
+Description=DumpVault — scheduled database backups
+Documentation=https://github.com/saadbaig/dumpvault
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=dumpvault
+Group=dumpvault
+WorkingDirectory=/var/lib/dumpvault
+ExecStart=/usr/local/bin/dumpvault start --config /etc/dumpvault/dumpvault.yaml
+EnvironmentFile=-/etc/dumpvault/env
+Restart=on-failure
+RestartSec=10s
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/lib/dumpvault
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+LockPersonality=true
+RestrictRealtime=true
+RestrictNamespaces=true
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target

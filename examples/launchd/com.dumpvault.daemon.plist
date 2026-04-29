@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Launchd agent for DumpVault on macOS.
+
+  Install (per-user, run as your login user):
+    cp com.dumpvault.daemon.plist ~/Library/LaunchAgents/
+    launchctl load ~/Library/LaunchAgents/com.dumpvault.daemon.plist
+
+  Install (system-wide daemon, runs even when no user is logged in):
+    sudo cp com.dumpvault.daemon.plist /Library/LaunchDaemons/
+    sudo launchctl load /Library/LaunchDaemons/com.dumpvault.daemon.plist
+
+  Logs are at /usr/local/var/log/dumpvault*.log.
+  Edit the paths and EnvironmentVariables block to match your install.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dumpvault.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/dumpvault</string>
+        <string>start</string>
+        <string>--config</string>
+        <string>/usr/local/etc/dumpvault/dumpvault.yaml</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+        <key>Crashed</key>
+        <true/>
+    </dict>
+
+    <key>StandardOutPath</key>
+    <string>/usr/local/var/log/dumpvault.log</string>
+    <key>StandardErrorPath</key>
+    <string>/usr/local/var/log/dumpvault.err.log</string>
+
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+        <!-- Add your DB password env vars here, e.g.:
+        <key>PROD_PG_PASSWORD</key>
+        <string>...</string>
+        -->
+    </dict>
+
+    <key>ProcessType</key>
+    <string>Background</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>

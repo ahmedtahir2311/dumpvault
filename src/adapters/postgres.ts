@@ -1,7 +1,7 @@
 import { spawn } from 'node:child_process';
 import type { Writable } from 'node:stream';
-import { DumpError } from '../errors.ts';
 import type { ResolvedDatabase } from '../config/load.ts';
+import { DumpError } from '../errors.ts';
 import type { Adapter } from './adapter.ts';
 
 export class PostgresAdapter implements Adapter {
