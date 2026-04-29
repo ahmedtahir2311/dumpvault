@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit"
   },
   "license": "MIT",
-  "author": "Saad Baig",
+  "author": "Ahmed Tahir",
   "engines": {
     "bun": ">=1.0.0"
   },

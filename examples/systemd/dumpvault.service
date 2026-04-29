@@ -16,7 +16,7 @@
 
 [Unit]
 Description=DumpVault — scheduled database backups
-Documentation=https://github.com/saadbaig/dumpvault
+Documentation=https://github.com/ahmedtahir2311/dumpvault
 After=network-online.target
 Wants=network-online.target
 
