@@ -2,13 +2,32 @@ import { z } from 'zod';
 
 const RetentionSchema = z
   .object({
-    keep_last: z.number().int().positive(),
+    keep_last: z.number().int().nonnegative().optional(),
+    keep_daily: z.number().int().nonnegative().optional(),
+    keep_weekly: z.number().int().nonnegative().optional(),
+    keep_monthly: z.number().int().nonnegative().optional(),
+  })
+  .strict()
+  .refine(
+    (r) =>
+      (r.keep_last ?? 0) + (r.keep_daily ?? 0) + (r.keep_weekly ?? 0) + (r.keep_monthly ?? 0) > 0,
+    {
+      message:
+        'retention: at least one of keep_last / keep_daily / keep_weekly / keep_monthly must be > 0',
+    },
+  );
+
+const EncryptionSchema = z
+  .object({
+    enabled: z.boolean(),
+    key_file: z.string().min(1),
   })
   .strict();
 
 const StorageSchema = z
   .object({
     path: z.string().min(1),
+    encryption: EncryptionSchema.optional(),
     retention: RetentionSchema,
   })
   .strict();

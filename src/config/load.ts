@@ -3,6 +3,7 @@ import { resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { ConfigError } from '../errors.ts';
+import { loadKey } from '../storage/encryption.ts';
 import {
   type Config,
   ConfigSchema,
@@ -23,6 +24,8 @@ export type ResolvedDatabase = ResolvedPostgresDatabase | ResolvedMysqlDatabase;
 
 export type ResolvedConfig = Omit<Config, 'databases'> & {
   databases: ResolvedDatabase[];
+  /** AES-256-GCM key, resolved from `storage.encryption.key_file` if encryption is enabled. */
+  encryptionKey?: Buffer;
 };
 
 export interface LoadOptions {
@@ -67,8 +70,15 @@ export function loadConfig(path: string, opts: LoadOptions = {}): ResolvedConfig
 
   enforceFilePermissions(absolute, config);
 
+  let encryptionKey: Buffer | undefined;
+  if (config.storage.encryption?.enabled) {
+    const keyFilePath = resolve(expandHome(config.storage.encryption.key_file));
+    encryptionKey = loadKey(keyFilePath);
+  }
+
   return {
     ...config,
+    encryptionKey,
     databases: config.databases.map((db) => {
       if (opts.skipSecrets) return stripPasswordRefs(db);
       if (opts.resolveOnly !== undefined && db.name !== opts.resolveOnly) {

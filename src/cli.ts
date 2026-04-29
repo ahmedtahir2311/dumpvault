@@ -11,6 +11,7 @@ import { runJobWithNotifications } from './jobs/runner.ts';
 import { runVerify } from './jobs/verify.ts';
 import { log } from './logging/log.ts';
 import { Daemon } from './scheduler/daemon.ts';
+import { generateKeyBase64 } from './storage/encryption.ts';
 import { dbRoot } from './storage/paths.ts';
 import { collectDumps, readSha256Sidecar } from './storage/scan.ts';
 import { errMsg, humanSize, printTable } from './util/format.ts';
@@ -31,6 +32,29 @@ program
     }
     writeFileSync(target, SAMPLE_CONFIG);
     log.info({ target }, 'created starter config — edit it before running');
+  });
+
+program
+  .command('keygen')
+  .description('Generate a fresh AES-256 encryption key (base64) for storage.encryption.key_file')
+  .option('-o, --out <path>', 'write the key to this file (mode 600)')
+  .action((opts: { out?: string }) => {
+    const key = generateKeyBase64();
+    if (!opts.out) {
+      // Print only — caller pipes to a file or copies it.
+      console.log(key);
+      return;
+    }
+    const target = resolve(opts.out);
+    if (existsSync(target)) {
+      log.error({ target }, 'key file already exists; refusing to overwrite');
+      process.exit(1);
+    }
+    writeFileSync(target, `${key}\n`, { mode: 0o600 });
+    log.info(
+      { target },
+      'wrote 32-byte AES key (mode 600). Reference it from storage.encryption.key_file.',
+    );
   });
 
 program

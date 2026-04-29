@@ -7,7 +7,7 @@
 
 DumpVault is a single binary you point at any database. It dumps it on a schedule, stores the dump locally, prunes old ones, and tells you when something breaks. No telemetry, no cloud dependency, no runtime to install.
 
-**Status:** v0.3 alpha — Postgres + MySQL/MariaDB at the CLI; CLI-driven restore + integrity verify on Postgres. Pre-1.0 means breaking changes between minor versions are possible.
+**Status:** v0.4 alpha — Postgres + MySQL/MariaDB at the CLI; CLI-driven restore + integrity verify on Postgres; AES-256-GCM encryption at rest; GFS retention. Pre-1.0 means breaking changes between minor versions are possible.
 
 ---
 
@@ -42,8 +42,16 @@ dumpvault start
 ```yaml
 storage:
   path: ~/dumpvault/backups
+  # Optional encryption at rest (AES-256-GCM streaming).
+  # Generate a key first: dumpvault keygen --out ~/.dumpvault/master.key
+  encryption:
+    enabled: true
+    key_file: ~/.dumpvault/master.key
   retention:
-    keep_last: 7
+    keep_last: 7        # always keep the 7 most recent dumps
+    keep_daily: 30      # plus newest from each of the last 30 days
+    keep_weekly: 12     # plus newest from each of the last 12 ISO weeks
+    keep_monthly: 12    # plus newest from each of the last 12 months
 
 # Optional — POST a JSON payload to Slack/Discord/Teams on failure.
 notifications:
@@ -79,6 +87,7 @@ dumpvault status               # last/next run + size per target  (--json availa
 dumpvault history <name>       # list past dumps with size + sha256  (--json available)
 dumpvault verify [name]        # check sha256 + gunzip + pg_restore -l on dumps  (--all, --json, --file)
 dumpvault restore <name> --to <database>   # restore a Postgres dump (confirms first; --yes to skip)
+dumpvault keygen --out <path>  # generate a 32-byte AES-256 key for storage.encryption.key_file
 ```
 
 ## Why not just use `pg_dump` + cron?
@@ -103,9 +112,9 @@ We're going **deep on Postgres before going wide**. v0.1–v1.0 takes Postgres f
 | -------- | ----------------------------------------------------- | ----------- |
 | v0.1     | Postgres adapter + CLI + daemon + webhooks            | done        |
 | v0.2     | MySQL / MariaDB CLI parity                            | done        |
-| **v0.3** | `dumpvault restore` + `dumpvault verify`              | done        |
-| v0.4     | Encryption at rest (AES-256-GCM) + full GFS retention | next        |
-| v0.5     | Embedded web UI (`dumpvault start --ui`)              | planned     |
+| v0.3     | `dumpvault restore` + `dumpvault verify`              | done        |
+| v0.4     | Encryption at rest (AES-256-GCM) + full GFS retention | done        |
+| **v0.5** | Embedded web UI (`dumpvault start --ui`)              | next        |
 | v0.6     | Distribution polish — Homebrew tap, Docker, install script | planned |
 | v0.7     | Tauri desktop wrapper (optional, demand-driven)       | planned     |
 | **v1.0** | Tag, release, Show HN                                 | planned     |

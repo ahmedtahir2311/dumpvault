@@ -5,8 +5,9 @@ import { MysqlAdapter } from '../adapters/mysql.ts';
 import { PostgresAdapter } from '../adapters/postgres.ts';
 import { type ResolvedConfig, type ResolvedDatabase, expandHome } from '../config/load.ts';
 import { postWebhook } from '../notifications/webhook.ts';
+import { ENCRYPTED_EXTENSION } from '../storage/encryption.ts';
 import { dbRoot, dumpDir, dumpFilename } from '../storage/paths.ts';
-import { pruneKeepLast } from '../storage/retention.ts';
+import { pruneByPolicy } from '../storage/retention.ts';
 import { type WriteResult, writeDump } from '../storage/writer.ts';
 import { errMsg, humanSize } from '../util/format.ts';
 
@@ -24,12 +25,14 @@ export async function runJob(
   const root = expandHome(config.storage.path);
   const now = new Date();
   const dir = dumpDir(root, db.name, now);
-  const filename = dumpFilename(now, `${adapter.extension()}.gz`);
+  const encryptionKey = config.encryptionKey;
+  const suffix = `${adapter.extension()}.gz${encryptionKey ? ENCRYPTED_EXTENSION : ''}`;
+  const filename = dumpFilename(now, suffix);
   const outputPath = join(dir, filename);
 
-  jobLog.info({ outputPath }, 'writing dump');
+  jobLog.info({ outputPath, encrypted: Boolean(encryptionKey) }, 'writing dump');
 
-  const result = await writeDump(adapter, outputPath);
+  const result = await writeDump(adapter, outputPath, { encryptionKey });
 
   jobLog.info(
     {
@@ -41,7 +44,7 @@ export async function runJob(
     'dump complete',
   );
 
-  pruneKeepLast(dbRoot(root, db.name), config.storage.retention.keep_last, jobLog);
+  pruneByPolicy(dbRoot(root, db.name), config.storage.retention, jobLog);
 
   jobLog.info('job complete');
   return result;

@@ -178,8 +178,8 @@ databases:
 | v0.1    | Foundation         | Postgres adapter + CLI + daemon + webhooks                                                | done        |
 | v0.2    | Engine breadth     | MySQL / MariaDB CLI parity                                                                | done        |
 | v0.3    | Recovery + trust   | `dumpvault restore` (Postgres custom-format) and `dumpvault verify` (sha + gunzip + pg_restore -l) | done |
-| v0.4    | Hardening          | Encryption at rest (AES-256-GCM), full GFS retention (`keep_daily/weekly/monthly`)        | next        |
-| v0.5    | UX surface         | Embedded web UI (`dumpvault start --ui`) — Plausible / Portainer-style local dashboard    | planned     |
+| v0.4    | Hardening          | Encryption at rest (AES-256-GCM streaming), full GFS retention (`keep_daily/weekly/monthly`), `dumpvault keygen` | done |
+| v0.5    | UX surface         | Embedded web UI (`dumpvault start --ui`) — Plausible / Portainer-style local dashboard    | next        |
 | v0.6    | Distribution polish | Homebrew tap, Docker image, install script, GoReleaser-equivalent for Bun                | planned     |
 | v0.7    | Native shell       | Tauri desktop wrapper (optional — demand-driven)                                          | planned     |
 | v1.0    | Stability          | First stable release; semver guarantees begin; Show HN                                    | planned     |

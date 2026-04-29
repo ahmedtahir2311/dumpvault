@@ -6,6 +6,7 @@ import { pipeline } from 'node:stream/promises';
 import { createGzip } from 'node:zlib';
 import type { Adapter } from '../adapters/adapter.ts';
 import { StorageError } from '../errors.ts';
+import { Encryptor } from './encryption.ts';
 
 export interface WriteResult {
   outputPath: string;
@@ -14,7 +15,16 @@ export interface WriteResult {
   durationMs: number;
 }
 
-export async function writeDump(adapter: Adapter, outputPath: string): Promise<WriteResult> {
+export interface WriteOptions {
+  /** When set, the gzipped stream is AES-256-GCM encrypted before hitting disk. */
+  encryptionKey?: Buffer;
+}
+
+export async function writeDump(
+  adapter: Adapter,
+  outputPath: string,
+  opts: WriteOptions = {},
+): Promise<WriteResult> {
   try {
     mkdirSync(dirname(outputPath), { recursive: true });
   } catch (err) {
@@ -42,7 +52,10 @@ export async function writeDump(adapter: Adapter, outputPath: string): Promise<W
   });
 
   try {
-    await Promise.all([dumpPromise, pipeline(raw, gz, tap, file)]);
+    const pipePromise = opts.encryptionKey
+      ? pipeline(raw, gz, new Encryptor(opts.encryptionKey), tap, file)
+      : pipeline(raw, gz, tap, file);
+    await Promise.all([dumpPromise, pipePromise]);
     renameSync(tmpPath, outputPath);
   } catch (err) {
     try {

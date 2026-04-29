@@ -7,6 +7,7 @@ import { createGunzip } from 'node:zlib';
 import type { Logger } from 'pino';
 import { type ResolvedConfig, type ResolvedPostgresDatabase, expandHome } from '../config/load.ts';
 import { ConfigError, DumpError } from '../errors.ts';
+import { Decryptor, isEncryptedPath } from '../storage/encryption.ts';
 import { dbRoot } from '../storage/paths.ts';
 import { type DumpEntry, collectDumps, readSha256Sidecar } from '../storage/scan.ts';
 import { errMsg, humanSize } from '../util/format.ts';
@@ -115,7 +116,20 @@ export async function runRestore(opts: RestoreOptions, log: Logger): Promise<voi
     }
   }
 
-  await runPgRestore(dumpPath, target, opts.toDatabase, opts.clean, opts.create, log);
+  // Decryption stage if the source is encrypted.
+  let pre: NodeJS.ReadWriteStream[];
+  if (isEncryptedPath(dumpPath)) {
+    if (!opts.config.encryptionKey) {
+      throw new ConfigError(
+        `${dumpPath} is encrypted but no encryption key is configured. Set storage.encryption.key_file in your config.`,
+      );
+    }
+    pre = [new Decryptor(opts.config.encryptionKey)];
+  } else {
+    pre = [];
+  }
+
+  await runPgRestore(dumpPath, pre, target, opts.toDatabase, opts.clean, opts.create, log);
   log.info({ target: opts.toDatabase }, 'restore complete');
 }
 
@@ -167,9 +181,10 @@ function chooseDumpPath(opts: RestoreOptions, db: ResolvedPostgresDatabase): str
 
 function validateDumpFormat(path: string): void {
   const fname = basename(path);
-  if (!fname.endsWith('.dump.gz')) {
+  // Accept .dump.gz or .dump.gz.enc (encrypted custom-format).
+  if (!(fname.endsWith('.dump.gz') || fname.endsWith('.dump.gz.enc'))) {
     throw new DumpError(
-      'restore in v0.3 supports only custom-format Postgres dumps (.dump.gz). ' +
+      'restore supports only custom-format Postgres dumps (.dump.gz / .dump.gz.enc). ' +
         'For .sql.gz (plain) or .tar dumps, use the manual recipe in docs/adapters/postgres.md.',
     );
   }
@@ -210,6 +225,7 @@ function resolveTarget(opts: RestoreOptions, db: ResolvedPostgresDatabase): Reso
 
 async function runPgRestore(
   gzipPath: string,
+  pre: NodeJS.ReadWriteStream[],
   target: ResolvedRestoreTarget,
   database: string,
   clean: boolean,
@@ -248,7 +264,7 @@ async function runPgRestore(
       }
     });
 
-    pipeline(createReadStream(gzipPath), createGunzip(), proc.stdin).catch((err) => {
+    pipeline(createReadStream(gzipPath), ...pre, createGunzip(), proc.stdin).catch((err) => {
       proc.stdin.destroy();
       reject(new DumpError(`failed to stream dump into pg_restore: ${errMsg(err)}`));
     });
