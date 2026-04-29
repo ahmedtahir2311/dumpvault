@@ -11,18 +11,34 @@ DumpVault is a single binary you point at any database. It dumps it on a schedul
 
 ---
 
+## Install
+
+Pick one:
+
+```bash
+# Install script (macOS / Linux, x64 / arm64) — verifies sha256 before installing.
+curl -fsSL https://raw.githubusercontent.com/ahmedtahir2311/dumpvault/main/scripts/install.sh | sh
+
+# Homebrew (macOS / Linux)
+brew install ahmedtahir2311/dumpvault/dumpvault
+
+# Docker (multi-arch, includes pg_dump and mysqldump)
+docker pull ghcr.io/ahmedtahir2311/dumpvault:latest
+
+# Or download a binary directly:
+# https://github.com/ahmedtahir2311/dumpvault/releases/latest
+```
+
+You also need `pg_dump` (for Postgres) or `mysqldump` (for MySQL) on PATH — the Docker image bundles both; for native installs see `docs/adapters/postgres.md` / `docs/adapters/mysql.md`.
+
 ## Quick start
 
 ```bash
-# 1. Install (manual for now — Homebrew tap and install script land at v0.1 release)
-curl -fsSL https://github.com/ahmedtahir2311/dumpvault/releases/latest/download/dumpvault-darwin-arm64 \
-  -o /usr/local/bin/dumpvault && chmod +x /usr/local/bin/dumpvault
-
-# 2. Generate a starter config and edit it
+# 1. Generate a starter config and edit it
 dumpvault init
 $EDITOR ./dumpvault.yaml
 
-# 3. Dump
+# 2. Dump
 export PROD_PG_PASSWORD='...'
 dumpvault run prod-app
 ```
@@ -134,9 +150,9 @@ We're going **deep on Postgres before going wide**. v0.1–v1.0 takes Postgres f
 | v0.3     | `dumpvault restore` + `dumpvault verify`              | done        |
 | v0.4     | Encryption at rest (AES-256-GCM) + full GFS retention | done        |
 | v0.5     | Embedded web UI (`dumpvault start --ui`)              | done        |
-| **v0.6** | Distribution polish — Homebrew tap, Docker, install script | next   |
+| v0.6     | Distribution polish — Homebrew tap, Docker, install script | done   |
 | v0.7     | Tauri desktop wrapper (optional, demand-driven)       | planned     |
-| **v1.0** | Tag, release, Show HN                                 | planned     |
+| **v1.0** | Tag, release, Show HN                                 | next        |
 | v1.1+    | SQLite, MongoDB, Redis, MSSQL, ClickHouse, S3-compatible cloud sync | planned |
 
 Tier-3 engines (Cassandra, CockroachDB, InfluxDB, Elasticsearch, …) will be community/plugin contributions. See [`docs/PRD.md`](docs/PRD.md) §5.

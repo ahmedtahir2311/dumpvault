@@ -19,7 +19,7 @@ import { errMsg, humanSize, printTable } from './util/format.ts';
 
 const program = new Command();
 
-program.name('dumpvault').description('Cross-engine database backup tool').version('0.1.0-pre');
+program.name('dumpvault').description('Cross-engine database backup tool').version('0.6.0-pre');
 
 program
   .command('init')

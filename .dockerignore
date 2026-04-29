@@ -1,0 +1,22 @@
+.git
+.github
+.idea
+.vscode
+.DS_Store
+
+node_modules
+dist
+backups
+
+*.log
+*.bun-build
+.*.bun-build
+
+# These exist in the workspace but aren't needed inside the build context.
+docs
+examples
+tests
+README.md
+CONTRIBUTING.md
+RELEASING.md
+LICENSE

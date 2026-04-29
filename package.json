@@ -1,6 +1,6 @@
 {
   "name": "dumpvault",
-  "version": "0.1.0-pre",
+  "version": "0.6.0-pre",
   "description": "Cross-engine database backup tool. One binary, one config, many databases.",
   "type": "module",
   "module": "src/cli.ts",
