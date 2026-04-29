@@ -3,6 +3,7 @@ import type { ResolvedConfig } from '../config/load.ts';
 import { createApiApp } from './api.ts';
 // Bun's HTML import — bundles the React SPA + CSS at build time and embeds in the binary.
 import indexHtml from './frontend/index.html';
+import { ICON_SVG, MANIFEST, SERVICE_WORKER } from './pwa.ts';
 
 export interface WebUIOptions {
   config: ResolvedConfig;
@@ -30,6 +31,28 @@ export function startWebUI(opts: WebUIOptions): WebUIServer {
       '/': indexHtml as any,
       // biome-ignore lint/suspicious/noExplicitAny: Bun's HTMLBundle import type
       '/db/:name': indexHtml as any,
+
+      // PWA assets — see src/ui/pwa.ts for rationale on hand-served vs bundled.
+      '/manifest.webmanifest': () =>
+        new Response(MANIFEST, {
+          headers: { 'Content-Type': 'application/manifest+json' },
+        }),
+      '/icon.svg': () =>
+        new Response(ICON_SVG, {
+          headers: {
+            'Content-Type': 'image/svg+xml',
+            'Cache-Control': 'public, max-age=86400',
+          },
+        }),
+      '/sw.js': () =>
+        new Response(SERVICE_WORKER, {
+          headers: {
+            'Content-Type': 'application/javascript',
+            'Service-Worker-Allowed': '/',
+            'Cache-Control': 'no-cache',
+          },
+        }),
+
       // Hono handles the API surface.
       '/api/*': (req: Request) => apiApp.fetch(req),
     },

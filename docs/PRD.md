@@ -181,7 +181,7 @@ databases:
 | v0.4    | Hardening          | Encryption at rest (AES-256-GCM streaming), full GFS retention (`keep_daily/weekly/monthly`), `dumpvault keygen` | done |
 | v0.5    | UX surface         | Embedded web UI (`dumpvault start --ui` / `dumpvault ui`) — Hono backend + React SPA bundled into the static binary | done |
 | v0.6    | Distribution polish | Homebrew tap (template + render script), multi-arch Docker image at GHCR, POSIX install script with sha verify, RELEASING.md | done |
-| v0.7    | Native shell       | Tauri desktop wrapper (optional — demand-driven)                                          | planned     |
+| v0.7    | Installable shell  | PWA — web manifest + service worker + maskable SVG icon. Browser/OS handles the install + chromeless window. No Tauri / Electron in the build. | done |
 | v1.0    | Stability          | First stable release; semver guarantees begin; Show HN                                    | planned     |
 | v1.1+   | Multi-engine polish | MySQL restore + verify; SQLite adapter; MongoDB adapter                                  | planned     |
 | v1.x    | Storage            | S3-compatible cloud sync (S3, R2, B2, GCS, Azure)                                         | planned     |

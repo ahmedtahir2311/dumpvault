@@ -1,15 +1,6 @@
 import { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 
-interface Database {
-  name: string;
-  engine: 'postgres' | 'mysql';
-  host: string;
-  port: number;
-  database: string;
-  schedule: string;
-}
-
 interface StatusRow {
   name: string;
   engine: string;
@@ -348,3 +339,30 @@ function App() {
 const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('#root element missing from index.html');
 createRoot(rootEl).render(<App />);
+
+// PWA setup — runtime-injected so Bun's HTML bundler doesn't try to resolve
+// the runtime-served paths as build-time assets.
+function injectPwaLinks(): void {
+  const links: Array<Record<string, string>> = [
+    { rel: 'manifest', href: '/manifest.webmanifest' },
+    { rel: 'icon', type: 'image/svg+xml', href: '/icon.svg' },
+    { rel: 'apple-touch-icon', href: '/icon.svg' },
+  ];
+  for (const attrs of links) {
+    const el = document.createElement('link');
+    for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
+    document.head.appendChild(el);
+  }
+}
+injectPwaLinks();
+
+// Register the PWA service worker so the browser offers an "Install" affordance.
+// The SW is a pass-through (see src/ui/pwa.ts) — it exists for installability,
+// not offline support. The daemon must be reachable for the UI to function.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    void navigator.serviceWorker.register('/sw.js').catch((err) => {
+      console.warn('PWA service worker registration failed:', err);
+    });
+  });
+}

@@ -7,7 +7,7 @@
 
 DumpVault is a single binary you point at any database. It dumps it on a schedule, stores the dump locally, prunes old ones, and tells you when something breaks. No telemetry, no cloud dependency, no runtime to install.
 
-**Status:** v0.5 alpha — Postgres + MySQL/MariaDB at the CLI; restore + integrity verify on Postgres; AES-256-GCM encryption at rest; GFS retention; **embedded web UI** (`dumpvault start --ui` or `dumpvault ui`). Pre-1.0 means breaking changes between minor versions are possible.
+**Status:** v0.7 alpha — Postgres + MySQL/MariaDB at the CLI; restore + integrity verify on Postgres; AES-256-GCM encryption at rest; GFS retention; embedded web UI installable as a PWA (`dumpvault start --ui` or `dumpvault ui`); Homebrew tap + Docker + install script. Pre-1.0 means breaking changes between minor versions are possible.
 
 ---
 
@@ -123,7 +123,13 @@ ssh -N -L 8080:127.0.0.1:8080 user@your-server
 # then open http://localhost:8080 in your browser
 ```
 
-The dashboard shows last-dump time, size, and next scheduled run for every configured database. Click a row to see history (size + sha256 + path). "Run now" triggers a one-shot dump. "Verify latest" runs the same `dumpvault verify` checks (sha256 + gunzip + `pg_restore -l`) against the most recent dump. Restore is intentionally not exposed in the UI in v0.5 — too destructive for an unauthenticated localhost surface; use the CLI.
+The dashboard shows last-dump time, size, and next scheduled run for every configured database. Click a row to see history (size + sha256 + path). "Run now" triggers a one-shot dump. "Verify latest" runs the same `dumpvault verify` checks (sha256 + gunzip + `pg_restore -l`) against the most recent dump. Restore is intentionally not exposed in the UI — too destructive for an unauthenticated localhost surface; use the CLI.
+
+### Install as a desktop app (PWA)
+
+The web UI ships as an installable Progressive Web App. In Chrome, Edge, or Brave, open the dashboard and click the install icon in the address bar (or "Install DumpVault" from the menu). On macOS Safari and iOS, use *Share → Add to Home Screen / Add to Dock*. You get a dock / Start-menu icon and the dashboard opens in its own chromeless window — same UX as a native app, no Tauri / Electron in the build.
+
+The PWA does not cache offline (the daemon must be running for the dashboard to be useful), so it's an installability shell, not an offline-capable app.
 
 ## Why not just use `pg_dump` + cron?
 
@@ -151,7 +157,7 @@ We're going **deep on Postgres before going wide**. v0.1–v1.0 takes Postgres f
 | v0.4     | Encryption at rest (AES-256-GCM) + full GFS retention | done        |
 | v0.5     | Embedded web UI (`dumpvault start --ui`)              | done        |
 | v0.6     | Distribution polish — Homebrew tap, Docker, install script | done   |
-| v0.7     | Tauri desktop wrapper (optional, demand-driven)       | planned     |
+| v0.7     | PWA install (manifest + service worker + icon) — desktop-app feel without Tauri | done |
 | **v1.0** | Tag, release, Show HN                                 | next        |
 | v1.1+    | SQLite, MongoDB, Redis, MSSQL, ClickHouse, S3-compatible cloud sync | planned |
 

@@ -4,6 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="color-scheme" content="dark light" />
+    <meta name="theme-color" content="#0d1117" />
+    <meta name="description" content="DumpVault — cross-engine database backup tool" />
+
+    <!-- PWA — manifest + icon links are injected at runtime by main.tsx
+         because Bun's HTML bundler tries to resolve href="/..." paths as
+         static assets at build time, but ours are served from Hono routes. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="DumpVault" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+
     <title>DumpVault</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
