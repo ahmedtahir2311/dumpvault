@@ -17,7 +17,7 @@ scheduler:
 
 databases:
   - name: prod-app
-    engine: postgres
+    engine: postgres                   # postgres | mysql
     host: db.example.com
     port: 5432
     user: backup_user
@@ -27,4 +27,18 @@ databases:
     options:
       format: custom                   # pg_dump -Fc
       compress: 6                      # gzip level 1-9
+
+  # Example MySQL / MariaDB target. Uncomment and edit.
+  # - name: legacy-mysql
+  #   engine: mysql
+  #   host: mysql.example.com
+  #   port: 3306
+  #   user: backup_user
+  #   password_env: LEGACY_MYSQL_PASSWORD
+  #   database: app
+  #   schedule: "@daily"
+  #   options:
+  #     single_transaction: true       # InnoDB-safe consistent dump
+  #     routines: true                 # include stored procs / functions
+  #     ssl_mode: REQUIRED             # for hosted services like PlanetScale
 `;

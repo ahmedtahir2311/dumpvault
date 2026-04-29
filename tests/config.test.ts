@@ -68,7 +68,61 @@ describe('ConfigSchema', () => {
 
   it('applies default postgres options', () => {
     const r = ConfigSchema.parse(baseConfig);
-    expect(r.databases[0]?.options.format).toBe('custom');
-    expect(r.databases[0]?.options.compress).toBe(6);
+    const db = r.databases[0];
+    expect(db?.engine).toBe('postgres');
+    if (db?.engine === 'postgres') {
+      expect(db.options.format).toBe('custom');
+      expect(db.options.compress).toBe(6);
+    }
+  });
+
+  it('accepts a valid mysql database', () => {
+    const r = ConfigSchema.safeParse({
+      ...baseConfig,
+      databases: [{ ...baseDb, engine: 'mysql' }],
+    });
+    expect(r.success).toBe(true);
+  });
+
+  it('applies engine-specific port defaults (5432 for postgres, 3306 for mysql)', () => {
+    const r = ConfigSchema.parse({
+      ...baseConfig,
+      databases: [
+        { ...baseDb, name: 'pg' },
+        { ...baseDb, name: 'my', engine: 'mysql' },
+      ],
+    });
+    expect(r.databases[0]?.port).toBe(5432);
+    expect(r.databases[1]?.port).toBe(3306);
+  });
+
+  it('applies mysql option defaults (single_transaction, routines, triggers)', () => {
+    const r = ConfigSchema.parse({
+      ...baseConfig,
+      databases: [{ ...baseDb, engine: 'mysql' }],
+    });
+    const db = r.databases[0];
+    if (db?.engine === 'mysql') {
+      expect(db.options.single_transaction).toBe(true);
+      expect(db.options.routines).toBe(true);
+      expect(db.options.triggers).toBe(true);
+      expect(db.options.events).toBe(false);
+    }
+  });
+
+  it('rejects an unknown engine', () => {
+    const r = ConfigSchema.safeParse({
+      ...baseConfig,
+      databases: [{ ...baseDb, engine: 'sqlite' }],
+    });
+    expect(r.success).toBe(false);
+  });
+
+  it('rejects postgres options on a mysql database', () => {
+    const r = ConfigSchema.safeParse({
+      ...baseConfig,
+      databases: [{ ...baseDb, engine: 'mysql', options: { format: 'custom' } }],
+    });
+    expect(r.success).toBe(false);
   });
 });

@@ -1,11 +1,11 @@
 import { spawn } from 'node:child_process';
 import type { Writable } from 'node:stream';
-import type { ResolvedDatabase } from '../config/load.ts';
+import type { ResolvedPostgresDatabase } from '../config/load.ts';
 import { DumpError } from '../errors.ts';
 import type { Adapter } from './adapter.ts';
 
 export class PostgresAdapter implements Adapter {
-  constructor(private readonly db: ResolvedDatabase) {}
+  constructor(private readonly db: ResolvedPostgresDatabase) {}
 
   engine(): string {
     return 'postgres';

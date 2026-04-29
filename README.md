@@ -7,7 +7,7 @@
 
 DumpVault is a single binary you point at any database. It dumps it on a schedule, stores the dump locally, prunes old ones, and tells you when something breaks. No telemetry, no cloud dependency, no runtime to install.
 
-**Status:** v0.1 alpha — Postgres-only, MVP feature complete, not yet released. Pre-1.0 means breaking changes between minor versions are possible.
+**Status:** v0.2 alpha — Postgres + MySQL/MariaDB. Pre-1.0 means breaking changes between minor versions are possible.
 
 ---
 
@@ -97,9 +97,9 @@ DumpVault is **not** a replacement for `pgbackrest` or `restic`. They go deeper 
 
 | Release  | Engine                                             | Status      |
 | -------- | -------------------------------------------------- | ----------- |
-| **v0.1** | PostgreSQL (incl. Supabase / Neon / RDS / Railway) | in progress |
-| v0.2     | MySQL / MariaDB (incl. PlanetScale)                | next        |
-| v0.3     | SQLite                                             | planned     |
+| v0.1     | PostgreSQL (incl. Supabase / Neon / RDS / Railway) | done        |
+| **v0.2** | MySQL / MariaDB (incl. PlanetScale)                | in progress |
+| v0.3     | SQLite                                             | next        |
 | v0.4     | MongoDB                                            | planned     |
 | v0.5     | _(hardening — encryption + GFS retention)_         | planned     |
 | v0.6     | _(`dumpvault restore` command)_                    | planned     |
@@ -148,7 +148,8 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the PR checklist and how to add a n
 
 - [`docs/PRD.md`](docs/PRD.md) — product spec, roadmap, locked decisions
 - [`docs/PLAN.md`](docs/PLAN.md) — original implementation plan (partially superseded by PRD)
-- [`docs/adapters/postgres.md`](docs/adapters/postgres.md) — Postgres adapter setup, hosted variants, restore recipe, common errors
+- [`docs/adapters/postgres.md`](docs/adapters/postgres.md) — Postgres adapter: setup, hosted variants, restore recipe, common errors
+- [`docs/adapters/mysql.md`](docs/adapters/mysql.md) — MySQL/MariaDB adapter: setup, hosted variants (PlanetScale, RDS, Cloud SQL), restore recipe, common errors
 
 ## License
 

@@ -38,7 +38,7 @@ program
   .option('-c, --config <path>', 'config file path', './dumpvault.yaml')
   .action(async (name: string, opts: { config: string }) => {
     try {
-      const config = loadConfig(opts.config);
+      const config = loadConfig(opts.config, { resolveOnly: name });
       const db = config.databases.find((d) => d.name === name);
       if (!db) {
         log.error(

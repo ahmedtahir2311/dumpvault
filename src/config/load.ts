@@ -3,19 +3,36 @@ import { resolve } from 'node:path';
 import { parse as parseYaml } from 'yaml';
 import { z } from 'zod';
 import { ConfigError } from '../errors.ts';
-import { type Config, ConfigSchema, type DatabaseConfig } from './schema.ts';
+import {
+  type Config,
+  ConfigSchema,
+  type DatabaseConfig,
+  type MysqlDatabase,
+  type PostgresDatabase,
+} from './schema.ts';
 
-export type ResolvedDatabase = Omit<DatabaseConfig, 'password_env' | 'password_file'> & {
+export type ResolvedPostgresDatabase = Omit<PostgresDatabase, 'password_env' | 'password_file'> & {
   password: string;
 };
+
+export type ResolvedMysqlDatabase = Omit<MysqlDatabase, 'password_env' | 'password_file'> & {
+  password: string;
+};
+
+export type ResolvedDatabase = ResolvedPostgresDatabase | ResolvedMysqlDatabase;
 
 export type ResolvedConfig = Omit<Config, 'databases'> & {
   databases: ResolvedDatabase[];
 };
 
 export interface LoadOptions {
-  /** Skip password resolution. For read-only commands like `status` and `history`. */
+  /** Skip password resolution entirely. For read-only commands like `status` and `history`. */
   skipSecrets?: boolean;
+  /**
+   * Resolve password only for the named database; leave others with empty password.
+   * For `dumpvault run <name>` so it doesn't require env vars for unrelated DBs.
+   */
+  resolveOnly?: string;
 }
 
 export function loadConfig(path: string, opts: LoadOptions = {}): ResolvedConfig {
@@ -52,9 +69,13 @@ export function loadConfig(path: string, opts: LoadOptions = {}): ResolvedConfig
 
   return {
     ...config,
-    databases: config.databases.map((db) =>
-      opts.skipSecrets ? stripPasswordRefs(db) : resolvePassword(db),
-    ),
+    databases: config.databases.map((db) => {
+      if (opts.skipSecrets) return stripPasswordRefs(db);
+      if (opts.resolveOnly !== undefined && db.name !== opts.resolveOnly) {
+        return stripPasswordRefs(db);
+      }
+      return resolvePassword(db);
+    }),
   };
 }
 

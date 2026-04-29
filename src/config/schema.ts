@@ -30,6 +30,8 @@ const SchedulerSchema = z
   })
   .strict();
 
+// ── Per-engine option schemas ─────────────────────────────────────────────────
+
 const PostgresOptionsSchema = z
   .object({
     format: z.enum(['custom', 'plain', 'tar']).default('custom'),
@@ -41,14 +43,41 @@ const PostgresOptionsSchema = z
   })
   .strict();
 
+const MysqlOptionsSchema = z
+  .object({
+    /** mysqldump --single-transaction. Default true for InnoDB safety. */
+    single_transaction: z.boolean().default(true),
+    /** mysqldump --routines (include stored procedures + functions). */
+    routines: z.boolean().default(true),
+    /** mysqldump --triggers. Default true (matches mysqldump default). */
+    triggers: z.boolean().default(true),
+    /** mysqldump --events. Default false because most projects don't use them. */
+    events: z.boolean().default(false),
+    /** Schema-only dump (no row data). */
+    no_data: z.boolean().optional(),
+    /** Add DROP TABLE before each CREATE TABLE. */
+    add_drop_table: z.boolean().optional(),
+    /** Tables to exclude (one --ignore-table=db.table per entry). */
+    exclude_tables: z.array(z.string().min(1)).optional(),
+    /** SSL mode passed to mysqldump --ssl-mode. */
+    ssl_mode: z
+      .enum(['DISABLED', 'PREFERRED', 'REQUIRED', 'VERIFY_CA', 'VERIFY_IDENTITY'])
+      .optional(),
+  })
+  .strict();
+
+// ── Per-engine database schemas ───────────────────────────────────────────────
+
+const databaseNameSchema = z
+  .string()
+  .min(1)
+  .regex(/^[a-zA-Z0-9_-]+$/, {
+    message: 'database name must be alphanumeric, underscore, or hyphen only',
+  });
+
 const PostgresDatabaseSchema = z
   .object({
-    name: z
-      .string()
-      .min(1)
-      .regex(/^[a-zA-Z0-9_-]+$/, {
-        message: 'database name must be alphanumeric, underscore, or hyphen only',
-      }),
+    name: databaseNameSchema,
     engine: z.literal('postgres'),
     host: z.string().min(1),
     port: z.number().int().positive().max(65535).default(5432),
@@ -59,17 +88,36 @@ const PostgresDatabaseSchema = z
     schedule: z.string().min(1),
     options: PostgresOptionsSchema.default({}),
   })
-  .strict()
-  .refine((db) => Boolean(db.password_env) !== Boolean(db.password_file), {
-    message: 'each database must specify exactly one of password_env or password_file',
-  });
+  .strict();
+
+const MysqlDatabaseSchema = z
+  .object({
+    name: databaseNameSchema,
+    engine: z.literal('mysql'),
+    host: z.string().min(1),
+    port: z.number().int().positive().max(65535).default(3306),
+    user: z.string().min(1),
+    password_env: z.string().min(1).optional(),
+    password_file: z.string().min(1).optional(),
+    database: z.string().min(1),
+    schedule: z.string().min(1),
+    options: MysqlOptionsSchema.default({}),
+  })
+  .strict();
+
+const DatabaseSchema = z.discriminatedUnion('engine', [
+  PostgresDatabaseSchema,
+  MysqlDatabaseSchema,
+]);
+
+// ── Top-level config ──────────────────────────────────────────────────────────
 
 export const ConfigSchema = z
   .object({
     storage: StorageSchema,
     notifications: NotificationsSchema.optional(),
     scheduler: SchedulerSchema.default({}),
-    databases: z.array(PostgresDatabaseSchema).min(1),
+    databases: z.array(DatabaseSchema).min(1),
   })
   .strict()
   .superRefine((cfg, ctx) => {
@@ -83,8 +131,18 @@ export const ConfigSchema = z
         });
       }
       seen.add(db.name);
+
+      if (Boolean(db.password_env) === Boolean(db.password_file)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['databases', i],
+          message: 'each database must specify exactly one of password_env or password_file',
+        });
+      }
     }
   });
 
 export type Config = z.infer<typeof ConfigSchema>;
-export type DatabaseConfig = z.infer<typeof PostgresDatabaseSchema>;
+export type DatabaseConfig = z.infer<typeof DatabaseSchema>;
+export type PostgresDatabase = z.infer<typeof PostgresDatabaseSchema>;
+export type MysqlDatabase = z.infer<typeof MysqlDatabaseSchema>;

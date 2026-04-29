@@ -1,5 +1,7 @@
 import { join } from 'node:path';
 import type { Logger } from 'pino';
+import type { Adapter } from '../adapters/adapter.ts';
+import { MysqlAdapter } from '../adapters/mysql.ts';
 import { PostgresAdapter } from '../adapters/postgres.ts';
 import { type ResolvedConfig, type ResolvedDatabase, expandHome } from '../config/load.ts';
 import { postWebhook } from '../notifications/webhook.ts';
@@ -16,7 +18,7 @@ export async function runJob(
   const jobLog = log.child({ db: db.name, engine: db.engine });
   jobLog.info('job start');
 
-  const adapter = new PostgresAdapter(db);
+  const adapter = makeAdapter(db);
   await adapter.preflight();
 
   const root = expandHome(config.storage.path);
@@ -43,6 +45,15 @@ export async function runJob(
 
   jobLog.info('job complete');
   return result;
+}
+
+function makeAdapter(db: ResolvedDatabase): Adapter {
+  switch (db.engine) {
+    case 'postgres':
+      return new PostgresAdapter(db);
+    case 'mysql':
+      return new MysqlAdapter(db);
+  }
 }
 
 /**
