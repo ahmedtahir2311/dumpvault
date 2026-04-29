@@ -6,7 +6,9 @@ import { Cron } from 'croner';
 import { type ResolvedConfig, expandHome, loadConfig } from './config/load.ts';
 import { SAMPLE_CONFIG } from './config/sample.ts';
 import { exitCodeFor } from './errors.ts';
+import { runRestore } from './jobs/restore.ts';
 import { runJobWithNotifications } from './jobs/runner.ts';
+import { runVerify } from './jobs/verify.ts';
 import { log } from './logging/log.ts';
 import { Daemon } from './scheduler/daemon.ts';
 import { dbRoot } from './storage/paths.ts';
@@ -190,5 +192,132 @@ program
       process.exit(exitCodeFor(err));
     }
   });
+
+program
+  .command('restore')
+  .description('Restore a Postgres dump to a target database (destructive — confirms first)')
+  .argument('<name>', 'database name from config')
+  .requiredOption('--to <database>', 'target database name (required)')
+  .option(
+    '--at <timestamp>',
+    'restore the dump matching this ISO timestamp prefix (default: latest)',
+  )
+  .option('--file <path>', 'restore an arbitrary dump file (overrides --at and latest-pick)')
+  .option('--to-host <host>', 'target host (default: source host from config)')
+  .option('--to-port <port>', 'target port (default: source port)', (v) => Number.parseInt(v, 10))
+  .option('--to-user <user>', 'target user (default: source user)')
+  .option('--to-password-env <var>', 'env var holding the target password (default: reuse source)')
+  .option('--clean', 'pass --clean --if-exists to pg_restore (drop existing objects first)')
+  .option('--create', 'pass --create to pg_restore (create the target database)')
+  .option('-c, --config <path>', 'config file path', './dumpvault.yaml')
+  .option('--yes', 'skip the confirmation prompt')
+  .action(
+    async (
+      name: string,
+      opts: {
+        config: string;
+        to: string;
+        at?: string;
+        file?: string;
+        toHost?: string;
+        toPort?: number;
+        toUser?: string;
+        toPasswordEnv?: string;
+        clean?: boolean;
+        create?: boolean;
+        yes?: boolean;
+      },
+    ) => {
+      try {
+        const config = loadConfig(opts.config, { resolveOnly: name });
+        await runRestore(
+          {
+            config,
+            dbName: name,
+            at: opts.at,
+            file: opts.file,
+            toDatabase: opts.to,
+            toHost: opts.toHost,
+            toPort: opts.toPort,
+            toUser: opts.toUser,
+            toPasswordEnv: opts.toPasswordEnv,
+            clean: opts.clean ?? false,
+            create: opts.create ?? false,
+            yes: opts.yes ?? false,
+          },
+          log,
+        );
+        process.exit(0);
+      } catch (err) {
+        log.error({ err: errMsg(err) }, 'restore failed');
+        process.exit(exitCodeFor(err));
+      }
+    },
+  );
+
+program
+  .command('verify')
+  .description('Verify dump integrity (sha256, gunzip, pg_restore -l)')
+  .argument('[name]', 'database name from config (default: all configured DBs)')
+  .option('-c, --config <path>', 'config file path', './dumpvault.yaml')
+  .option('--all', 'verify every dump for the target(s); default is just the latest')
+  .option('--file <path>', 'verify a specific file (skips config lookup)')
+  .option('--json', 'output results as JSON')
+  .action(
+    async (
+      name: string | undefined,
+      opts: { config: string; all?: boolean; file?: string; json?: boolean },
+    ) => {
+      try {
+        // For verify, no DB connection is made — skip secrets entirely.
+        const config = opts.file
+          ? // Still need a parsed config for path resolution; load with skipSecrets if available.
+            // If there's no config (--file used in isolation), fall back to a minimal stub.
+            tryLoadOrStub(opts.config)
+          : loadConfig(opts.config, { skipSecrets: true });
+
+        const results = await runVerify(
+          { config, dbName: name, all: opts.all ?? false, file: opts.file },
+          log,
+        );
+
+        if (opts.json) {
+          console.log(JSON.stringify(results, null, 2));
+        } else if (results.length === 0) {
+          console.log('(no dumps found)');
+        } else {
+          printTable(
+            ['DUMP', 'SIZE', 'SHA-256', 'GUNZIP', 'pg_restore', 'OK'],
+            results.map((r) => [
+              r.path,
+              '-', // size lookup omitted; user can `ls -lh`
+              r.shaOk ? 'ok' : 'FAIL',
+              r.gunzipOk ? 'ok' : 'FAIL',
+              r.pgRestoreOk === null ? '-' : r.pgRestoreOk ? 'ok' : 'FAIL',
+              r.ok ? '✓' : '✗',
+            ]),
+          );
+        }
+        const anyFailed = results.some((r) => !r.ok);
+        process.exit(anyFailed ? 2 : 0);
+      } catch (err) {
+        log.error({ err: errMsg(err) }, 'verify failed');
+        process.exit(exitCodeFor(err));
+      }
+    },
+  );
+
+function tryLoadOrStub(path: string): ResolvedConfig {
+  try {
+    return loadConfig(path, { skipSecrets: true });
+  } catch {
+    // Allow `dumpvault verify --file <path>` without any config file present.
+    return {
+      storage: { path: '/tmp', retention: { keep_last: 1 } },
+      scheduler: { max_concurrent: 1, jitter_seconds: 0 },
+      databases: [],
+    };
+  }
+}
 
 program.parseAsync(process.argv);

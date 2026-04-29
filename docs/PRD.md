@@ -169,20 +169,23 @@ databases:
   - Install script (`curl -fsSL ... | sh`)
 - Homebrew tap, Docker image, and Windows binary are post-MVP.
 
-## 7. Post-MVP roadmap
+## 7. Roadmap to v1.0 (revised 2026-04-29)
 
-| Release | Theme     | Headline feature                                                                       |
-| ------- | --------- | -------------------------------------------------------------------------------------- |
-| v0.2    | Engine    | MySQL / MariaDB adapter                                                                |
-| v0.3    | Engine    | SQLite adapter                                                                         |
-| v0.4    | Engine    | MongoDB adapter                                                                        |
-| v0.5    | Hardening | Encryption (AES-256-GCM), full GFS retention                                           |
-| v0.6    | UX        | `dumpvault restore` command                                                            |
-| v0.7    | UX        | Embedded web UI (`dumpvault start --ui`) — Plausible / Portainer-style local dashboard |
-| v1.0    | Stability | First stable release; semver guarantees begin                                          |
-| v1.x    | Storage   | S3-compatible cloud sync (S3, R2, B2, GCS, Azure)                                      |
-| v1.x    | Engines   | Redis, MSSQL, ClickHouse, DynamoDB                                                     |
-| post-v1 | Native UX | Tauri desktop wrapper (only if user demand exists)                                     |
+**Strategy pivot:** ship Postgres to *production-ready* before adding more engines. A polished single-engine tool is a stronger first release than a half-built four-engine tool. MySQL stays at CLI parity (v0.2) until v1.1+.
+
+| Release | Theme              | Headline feature                                                                          | Status      |
+| ------- | ------------------ | ----------------------------------------------------------------------------------------- | ----------- |
+| v0.1    | Foundation         | Postgres adapter + CLI + daemon + webhooks                                                | done        |
+| v0.2    | Engine breadth     | MySQL / MariaDB CLI parity                                                                | done        |
+| v0.3    | Recovery + trust   | `dumpvault restore` (Postgres custom-format) and `dumpvault verify` (sha + gunzip + pg_restore -l) | done |
+| v0.4    | Hardening          | Encryption at rest (AES-256-GCM), full GFS retention (`keep_daily/weekly/monthly`)        | next        |
+| v0.5    | UX surface         | Embedded web UI (`dumpvault start --ui`) — Plausible / Portainer-style local dashboard    | planned     |
+| v0.6    | Distribution polish | Homebrew tap, Docker image, install script, GoReleaser-equivalent for Bun                | planned     |
+| v0.7    | Native shell       | Tauri desktop wrapper (optional — demand-driven)                                          | planned     |
+| v1.0    | Stability          | First stable release; semver guarantees begin; Show HN                                    | planned     |
+| v1.1+   | Multi-engine polish | MySQL restore + verify; SQLite adapter; MongoDB adapter                                  | planned     |
+| v1.x    | Storage            | S3-compatible cloud sync (S3, R2, B2, GCS, Azure)                                         | planned     |
+| v1.x    | Engines            | Redis, MSSQL, ClickHouse, DynamoDB                                                        | planned     |
 
 ## 8. Success metrics (honest version)
 

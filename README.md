@@ -7,7 +7,7 @@
 
 DumpVault is a single binary you point at any database. It dumps it on a schedule, stores the dump locally, prunes old ones, and tells you when something breaks. No telemetry, no cloud dependency, no runtime to install.
 
-**Status:** v0.2 alpha — Postgres + MySQL/MariaDB. Pre-1.0 means breaking changes between minor versions are possible.
+**Status:** v0.3 alpha — Postgres + MySQL/MariaDB at the CLI; CLI-driven restore + integrity verify on Postgres. Pre-1.0 means breaking changes between minor versions are possible.
 
 ---
 
@@ -77,6 +77,8 @@ dumpvault run <name>           # one-shot dump (use with system cron / systemd t
 dumpvault start                # daemon mode — fires jobs on the configured schedule
 dumpvault status               # last/next run + size per target  (--json available)
 dumpvault history <name>       # list past dumps with size + sha256  (--json available)
+dumpvault verify [name]        # check sha256 + gunzip + pg_restore -l on dumps  (--all, --json, --file)
+dumpvault restore <name> --to <database>   # restore a Postgres dump (confirms first; --yes to skip)
 ```
 
 ## Why not just use `pg_dump` + cron?
@@ -93,18 +95,21 @@ dumpvault history <name>       # list past dumps with size + sha256  (--json ava
 
 DumpVault is **not** a replacement for `pgbackrest` or `restic`. They go deeper (PITR, deduplication, encryption-at-rest). DumpVault goes wider — one tool, many engines, sensible defaults. Use the right one for your job.
 
-## Engine roadmap
+## Roadmap to v1.0
 
-| Release  | Engine                                             | Status      |
-| -------- | -------------------------------------------------- | ----------- |
-| v0.1     | PostgreSQL (incl. Supabase / Neon / RDS / Railway) | done        |
-| **v0.2** | MySQL / MariaDB (incl. PlanetScale)                | in progress |
-| v0.3     | SQLite                                             | next        |
-| v0.4     | MongoDB                                            | planned     |
-| v0.5     | _(hardening — encryption + GFS retention)_         | planned     |
-| v0.6     | _(`dumpvault restore` command)_                    | planned     |
-| v0.7     | _(embedded web UI — `dumpvault start --ui`)_       | planned     |
-| v1.x     | Redis, MSSQL, ClickHouse, S3-compatible cloud sync | planned     |
+We're going **deep on Postgres before going wide**. v0.1–v1.0 takes Postgres from "works" to "production-ready" (CLI ✅ → restore ✅ → encryption → web UI → distribution polish). MySQL stays at CLI-level until v1.1+.
+
+| Release  | Theme                                                 | Status      |
+| -------- | ----------------------------------------------------- | ----------- |
+| v0.1     | Postgres adapter + CLI + daemon + webhooks            | done        |
+| v0.2     | MySQL / MariaDB CLI parity                            | done        |
+| **v0.3** | `dumpvault restore` + `dumpvault verify`              | done        |
+| v0.4     | Encryption at rest (AES-256-GCM) + full GFS retention | next        |
+| v0.5     | Embedded web UI (`dumpvault start --ui`)              | planned     |
+| v0.6     | Distribution polish — Homebrew tap, Docker, install script | planned |
+| v0.7     | Tauri desktop wrapper (optional, demand-driven)       | planned     |
+| **v1.0** | Tag, release, Show HN                                 | planned     |
+| v1.1+    | SQLite, MongoDB, Redis, MSSQL, ClickHouse, S3-compatible cloud sync | planned |
 
 Tier-3 engines (Cassandra, CockroachDB, InfluxDB, Elasticsearch, …) will be community/plugin contributions. See [`docs/PRD.md`](docs/PRD.md) §5.
 
