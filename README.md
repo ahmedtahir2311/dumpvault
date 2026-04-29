@@ -7,7 +7,7 @@
 
 DumpVault is a single binary you point at any database. It dumps it on a schedule, stores the dump locally, prunes old ones, and tells you when something breaks. No telemetry, no cloud dependency, no runtime to install.
 
-**Status:** v0.4 alpha — Postgres + MySQL/MariaDB at the CLI; CLI-driven restore + integrity verify on Postgres; AES-256-GCM encryption at rest; GFS retention. Pre-1.0 means breaking changes between minor versions are possible.
+**Status:** v0.5 alpha — Postgres + MySQL/MariaDB at the CLI; restore + integrity verify on Postgres; AES-256-GCM encryption at rest; GFS retention; **embedded web UI** (`dumpvault start --ui` or `dumpvault ui`). Pre-1.0 means breaking changes between minor versions are possible.
 
 ---
 
@@ -88,7 +88,26 @@ dumpvault history <name>       # list past dumps with size + sha256  (--json ava
 dumpvault verify [name]        # check sha256 + gunzip + pg_restore -l on dumps  (--all, --json, --file)
 dumpvault restore <name> --to <database>   # restore a Postgres dump (confirms first; --yes to skip)
 dumpvault keygen --out <path>  # generate a 32-byte AES-256 key for storage.encryption.key_file
+dumpvault start --ui           # daemon + embedded web UI at http://127.0.0.1:8080
+dumpvault ui                   # web UI only (no scheduled jobs)
 ```
+
+## Web UI
+
+```bash
+dumpvault start --ui                     # daemon + UI on 127.0.0.1:8080
+dumpvault start --ui --ui-port 9090      # custom port
+dumpvault ui --port 8080                 # UI only — useful for read-only inspection
+```
+
+The UI listens on `127.0.0.1` by default. **No auth in v0.5** — for remote access use SSH tunneling:
+
+```bash
+ssh -N -L 8080:127.0.0.1:8080 user@your-server
+# then open http://localhost:8080 in your browser
+```
+
+The dashboard shows last-dump time, size, and next scheduled run for every configured database. Click a row to see history (size + sha256 + path). "Run now" triggers a one-shot dump. "Verify latest" runs the same `dumpvault verify` checks (sha256 + gunzip + `pg_restore -l`) against the most recent dump. Restore is intentionally not exposed in the UI in v0.5 — too destructive for an unauthenticated localhost surface; use the CLI.
 
 ## Why not just use `pg_dump` + cron?
 
@@ -114,8 +133,8 @@ We're going **deep on Postgres before going wide**. v0.1–v1.0 takes Postgres f
 | v0.2     | MySQL / MariaDB CLI parity                            | done        |
 | v0.3     | `dumpvault restore` + `dumpvault verify`              | done        |
 | v0.4     | Encryption at rest (AES-256-GCM) + full GFS retention | done        |
-| **v0.5** | Embedded web UI (`dumpvault start --ui`)              | next        |
-| v0.6     | Distribution polish — Homebrew tap, Docker, install script | planned |
+| v0.5     | Embedded web UI (`dumpvault start --ui`)              | done        |
+| **v0.6** | Distribution polish — Homebrew tap, Docker, install script | next   |
 | v0.7     | Tauri desktop wrapper (optional, demand-driven)       | planned     |
 | **v1.0** | Tag, release, Show HN                                 | planned     |
 | v1.1+    | SQLite, MongoDB, Redis, MSSQL, ClickHouse, S3-compatible cloud sync | planned |

@@ -14,6 +14,7 @@ import { Daemon } from './scheduler/daemon.ts';
 import { generateKeyBase64 } from './storage/encryption.ts';
 import { dbRoot } from './storage/paths.ts';
 import { collectDumps, readSha256Sidecar } from './storage/scan.ts';
+import { startWebUI } from './ui/server.ts';
 import { errMsg, humanSize, printTable } from './util/format.ts';
 
 const program = new Command();
@@ -83,13 +84,21 @@ program
 
 program
   .command('start')
-  .description('Run as a daemon, firing scheduled jobs')
+  .description('Run as a daemon, firing scheduled jobs (optionally with embedded web UI)')
   .option('-c, --config <path>', 'config file path', './dumpvault.yaml')
-  .action((opts: { config: string }) => {
+  .option('--ui', 'enable the embedded web UI alongside the cron daemon')
+  .option('--ui-port <port>', 'web UI port (default 8080)', (v) => Number.parseInt(v, 10))
+  .option(
+    '--ui-host <host>',
+    'web UI hostname (default 127.0.0.1; use 0.0.0.0 to expose — no auth)',
+  )
+  .action((opts: { config: string; ui?: boolean; uiPort?: number; uiHost?: string }) => {
     let daemon: Daemon | null = null;
     try {
       const config = loadConfig(opts.config);
-      daemon = new Daemon(config, log);
+      daemon = new Daemon(config, log, {
+        ui: opts.ui ? { port: opts.uiPort ?? 8080, host: opts.uiHost ?? '127.0.0.1' } : undefined,
+      });
 
       const shutdown = async (signal: string): Promise<void> => {
         log.info({ signal }, 'shutdown signal received');
@@ -103,6 +112,34 @@ program
       // Daemon's croner schedules keep the event loop alive.
     } catch (err) {
       log.error({ err: errMsg(err) }, 'failed to start daemon');
+      process.exit(exitCodeFor(err));
+    }
+  });
+
+program
+  .command('ui')
+  .description('Run only the web UI (no scheduled jobs) — useful for read-only inspection')
+  .option('-c, --config <path>', 'config file path', './dumpvault.yaml')
+  .option('--port <port>', 'port (default 8080)', (v) => Number.parseInt(v, 10))
+  .option('--host <host>', 'hostname (default 127.0.0.1)')
+  .action((opts: { config: string; port?: number; host?: string }) => {
+    try {
+      const config = loadConfig(opts.config);
+      const server = startWebUI({
+        config,
+        log,
+        port: opts.port ?? 8080,
+        host: opts.host ?? '127.0.0.1',
+      });
+      const shutdown = (signal: string): void => {
+        log.info({ signal }, 'shutdown signal received');
+        server.stop();
+        process.exit(0);
+      };
+      process.on('SIGINT', () => shutdown('SIGINT'));
+      process.on('SIGTERM', () => shutdown('SIGTERM'));
+    } catch (err) {
+      log.error({ err: errMsg(err) }, 'failed to start web UI');
       process.exit(exitCodeFor(err));
     }
   });

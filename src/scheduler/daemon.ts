@@ -2,17 +2,24 @@ import { Cron } from 'croner';
 import type { Logger } from 'pino';
 import type { ResolvedConfig, ResolvedDatabase } from '../config/load.ts';
 import { runJobWithNotifications } from '../jobs/runner.ts';
+import { type WebUIServer, startWebUI } from '../ui/server.ts';
 import { errMsg } from '../util/format.ts';
 import { JobQueue } from './queue.ts';
+
+export interface DaemonOptions {
+  ui?: { port: number; host?: string };
+}
 
 export class Daemon {
   private readonly cronJobs: Cron[] = [];
   private readonly queue: JobQueue;
+  private webUI: WebUIServer | null = null;
   private stopping = false;
 
   constructor(
     private readonly config: ResolvedConfig,
     private readonly log: Logger,
+    private readonly opts: DaemonOptions = {},
   ) {
     this.queue = new JobQueue(config.scheduler.max_concurrent, log);
   }
@@ -40,6 +47,15 @@ export class Daemon {
       );
     }
 
+    if (this.opts.ui) {
+      this.webUI = startWebUI({
+        config: this.config,
+        log: this.log,
+        port: this.opts.ui.port,
+        host: this.opts.ui.host,
+      });
+    }
+
     this.log.info('daemon ready');
   }
 
@@ -48,6 +64,7 @@ export class Daemon {
     this.stopping = true;
     this.log.info('shutdown — stopping schedules');
     for (const c of this.cronJobs) c.stop();
+    if (this.webUI) this.webUI.stop();
     this.log.info({ inflight: this.queue.inflightCount() }, 'waiting for in-flight jobs');
     await this.queue.drain(60_000);
     this.log.info('daemon stopped');

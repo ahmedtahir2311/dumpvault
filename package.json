@@ -23,13 +23,18 @@
   "dependencies": {
     "commander": "^12.1.0",
     "croner": "^8.1.0",
+    "hono": "^4.12.15",
     "pino": "^9.5.0",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
     "yaml": "^2.6.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
     "@types/bun": "latest",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "typescript": "^5.6.0"
   }
 }
